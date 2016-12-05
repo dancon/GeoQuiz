@@ -1,5 +1,7 @@
 package com.bignerdranch.android.geoquiz;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -12,14 +14,18 @@ import android.widget.Toast;
 public class QuizActivity extends AppCompatActivity {
 
     private static final String TAG = "QuizActivity";
+    private static final String KEY_INDEX = "index";
+    private static final int REQUEST_CODE_CHEAT = 0;
 
     private Button mTrueButton;
     private Button mFalseButton;
     private ImageButton mNextButton;
     private ImageButton mPrevButton;
+    private Button mCheatButton;
     private TextView mQuestionTextView;
 
     private int mCurrentIndex = 1;
+    private boolean mIsCheater;
 
     private Question[] mQuestionBank = new Question[]{
             new Question(R.string.question_oceans, true),
@@ -30,13 +36,19 @@ public class QuizActivity extends AppCompatActivity {
     };
 
     // 更新问题
-    private void updateQuestion(boolean isNext){
-        if(isNext){
-            mCurrentIndex = (mCurrentIndex + 1) % mQuestionBank.length;
+    private void updateQuestion(boolean isNext, Bundle savedInstanceState){
+
+        mIsCheater = false;
+        if(savedInstanceState != null){
+            mCurrentIndex = savedInstanceState.getInt(KEY_INDEX);
         }else{
-            mCurrentIndex -= mCurrentIndex;
-            if(mCurrentIndex < 0){
-                mCurrentIndex = mCurrentIndex + mQuestionBank.length;
+            if(isNext){
+                mCurrentIndex = (mCurrentIndex + 1) % mQuestionBank.length;
+            }else{
+                mCurrentIndex -= 1;
+                if(mCurrentIndex < 0){
+                    mCurrentIndex = mCurrentIndex + mQuestionBank.length;
+                }
             }
         }
 
@@ -49,14 +61,18 @@ public class QuizActivity extends AppCompatActivity {
         boolean anserIsTrue = mQuestionBank[mCurrentIndex].isAnswerTrue();
 
         int messageResId = 0;
-        if (userPressedTrue == anserIsTrue){
-            messageResId = R.string.correct_toast;
-            Toast.makeText(this, messageResId, Toast.LENGTH_SHORT).show();
-            updateQuestion(true);
+        if(mIsCheater){
+            messageResId = R.string.judgment_toast;
         }else{
-            messageResId = R.string.incorrect_toast;
-            Toast.makeText(this, messageResId, Toast.LENGTH_SHORT).show();
+            if (userPressedTrue == anserIsTrue){
+                messageResId = R.string.correct_toast;
+                updateQuestion(true, null);
+            }else{
+                messageResId = R.string.incorrect_toast;
+            }
         }
+
+        Toast.makeText(this, messageResId, Toast.LENGTH_SHORT).show();
     }
 
     // 在 Activity 启动的时候首先会触发的事件
@@ -71,7 +87,7 @@ public class QuizActivity extends AppCompatActivity {
         mQuestionTextView.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v){
-                updateQuestion(true);
+                updateQuestion(true, null);
             }
         });
 
@@ -99,7 +115,23 @@ public class QuizActivity extends AppCompatActivity {
         mNextButton.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v){
-                updateQuestion(true);
+                updateQuestion(true, null);
+            }
+        });
+
+        // 作弊查看答案
+        mCheatButton = (Button) findViewById(R.id.cheat_button);
+        mCheatButton.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                Log.d(TAG, "start a new activity");
+
+                boolean answer = mQuestionBank[mCurrentIndex].isAnswerTrue();
+                // 通过 startActivity 来启动 CheatActivity
+                // startActivity(CheatActivity.newIntent(QuizActivity.this, answer));
+
+                // 同过 startActivityForResult 方法来从指定的 子 activity 中获取结果值
+                startActivityForResult(CheatActivity.newIntent(QuizActivity.this, answer), REQUEST_CODE_CHEAT);
             }
         });
 
@@ -108,11 +140,30 @@ public class QuizActivity extends AppCompatActivity {
         mPrevButton.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v){
-                updateQuestion(false);
+                updateQuestion(false, null);
             }
         });
 
-        updateQuestion(false);
+        updateQuestion(false, savedInstanceState);
+    }
+
+    // 当从子 Activity 返回时，系统会调用该方法
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent result){
+        if(resultCode != Activity.RESULT_OK){
+            return;
+        }
+
+        switch (requestCode){
+            case REQUEST_CODE_CHEAT:
+                if(result == null){
+                    return;
+                }
+                mIsCheater = CheatActivity.wasAnswerShown(result);
+                break;
+            default:
+                break;
+        }
     }
 
     @Override
@@ -125,6 +176,15 @@ public class QuizActivity extends AppCompatActivity {
     public void onResume(){
         super.onResume();
         Log.d(TAG, "onResume() called");
+    }
+
+    // 在 activity 重新构建前保存数据
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState){
+        super.onSaveInstanceState(savedInstanceState);
+
+        Log.d(TAG, "onSaveInstanceState");
+        savedInstanceState.putInt(KEY_INDEX, mCurrentIndex);
     }
 
     @Override
