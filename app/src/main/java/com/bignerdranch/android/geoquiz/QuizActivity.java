@@ -15,6 +15,7 @@ public class QuizActivity extends AppCompatActivity {
 
     private static final String TAG = "QuizActivity";
     private static final String KEY_INDEX = "index";
+    private static final String KEY_IS_CHEATER = "isCheater";
     private static final int REQUEST_CODE_CHEAT = 0;
 
     private Button mTrueButton;
@@ -38,7 +39,6 @@ public class QuizActivity extends AppCompatActivity {
     // 更新问题
     private void updateQuestion(boolean isNext, Bundle savedInstanceState){
 
-        mIsCheater = false;
         if(savedInstanceState != null){
             mCurrentIndex = savedInstanceState.getInt(KEY_INDEX);
         }else{
@@ -80,6 +80,11 @@ public class QuizActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_quiz);
+
+        mIsCheater = false;
+        if(savedInstanceState != null){
+            mIsCheater = savedInstanceState.getBoolean(KEY_IS_CHEATER);
+        }
 
         // 通过资源 id 获取组件
         mQuestionTextView = (TextView) findViewById(R.id.question_text_view);
@@ -183,8 +188,9 @@ public class QuizActivity extends AppCompatActivity {
     public void onSaveInstanceState(Bundle savedInstanceState){
         super.onSaveInstanceState(savedInstanceState);
 
-        Log.d(TAG, "onSaveInstanceState");
+        Log.d(TAG, "QuizActivity.onSaveInstanceState");
         savedInstanceState.putInt(KEY_INDEX, mCurrentIndex);
+        savedInstanceState.putBoolean(KEY_IS_CHEATER, mIsCheater);
     }
 
     @Override
