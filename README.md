@@ -9,3 +9,7 @@ Android 可以自动匹配最佳资源，但是必须通过新建一个 activity
 使用 startActivity(Intent) 启动 activity 实际上是发送请求到系统的 ActivityManager, 然后 ActivityManager 负责创建实例，然后调用 onCreate 方法。
 
 Activity.startActivity(Intent) 方法只能启动一个 activity 并且通过 Intent 向子 activity 中传递数据，但是要想从子 Activity 中获取返回结果，我们就必须使用 `Activity.startActivityForResult(Intent, int request_code)`,然后在子类中调用 `Activity.setResult(Intent)`, 最后在父 Activity 复写 `onActivityResult(int requestCode, int resultCode, Intent result)` 就能从返回的 Intent 中获取子 Activity 返回的数据了。
+
+# Fragment
+
+Fragment 并没有在屏幕上展示视图的能力，因此只能通过 activity 来托管它的视图。
